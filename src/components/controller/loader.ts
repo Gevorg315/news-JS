@@ -20,7 +20,7 @@ class Loader {
         this.options = options;
     }
 
-    getResp<T = unknown>(
+    public getResp<T = unknown>(
         { endpoint, options = {} }: RequestConfig,
         callback: ResponseCallback<T> = () => {
             console.error('No callback for GET response');

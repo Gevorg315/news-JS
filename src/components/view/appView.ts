@@ -38,12 +38,12 @@ export class AppView {
         this.sources = new Sources();
     }
 
-    drawNews(data: ApiResponse): void {
+    public drawNews(data: ApiResponse): void {
         const values = 'articles' in data ? data.articles ?? [] : [];
         this.news.draw(values);
     }
 
-    drawSources(data: ApiResponse): void {
+    public drawSources(data: ApiResponse): void {
         const values = 'sources' in data ? data.sources ?? [] : [];
         this.sources.draw(values);
     }

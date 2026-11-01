@@ -1,5 +1,10 @@
 import AppLoader from './appLoader';
 
+enum ApiEndpoint {
+    SOURCES = 'sources',
+    EVERYTHING = 'everything',
+}
+
 interface Source {
     id: string;
     name: string;
@@ -30,16 +35,16 @@ type ApiResponse = SourcesResponse | NewsResponse;
 type ResponseCallback = (data: ApiResponse) => void;
 
 class AppController extends AppLoader {
-    getSources(callback: ResponseCallback): void {
+    public getSources(callback: ResponseCallback): void {
         super.getResp<SourcesResponse>(
             {
-                endpoint: 'sources',
+                endpoint: ApiEndpoint.SOURCES,
             },
             callback
         );
     }
 
-    getNews(e: MouseEvent, callback: ResponseCallback): void {
+    public getNews(e: MouseEvent, callback: ResponseCallback): void {
         let target: Node | null = e.target instanceof Node ? e.target : null;
         const newsContainer = e.currentTarget;
 
@@ -56,7 +61,7 @@ class AppController extends AppLoader {
 
                     super.getResp<NewsResponse>(
                         {
-                            endpoint: 'everything',
+                            endpoint: ApiEndpoint.EVERYTHING,
                             options: {
                                 sources: sourceId,
                             },

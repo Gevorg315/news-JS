@@ -10,7 +10,7 @@ class App {
         this.view = new AppView();
     }
 
-    start(): void {
+    public start(): void {
         const sourcesContainer = document.querySelector<HTMLElement>('.sources');
 
         if (!sourcesContainer) {
