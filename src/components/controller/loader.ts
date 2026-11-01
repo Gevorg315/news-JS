@@ -11,11 +11,7 @@ class Loader {
     private baseLink: string;
     private options: RequestOptions;
 
-    constructor(baseLink: string | undefined, options: RequestOptions) {
-        if (!baseLink) {
-            throw new Error('API_URL is not configured');
-        }
-
+    constructor(baseLink: string, options: RequestOptions) {
         this.baseLink = baseLink;
         this.options = options;
     }
@@ -31,11 +27,7 @@ class Loader {
 
     private errorHandler(res: Response): Response {
         if (!res.ok) {
-            if (res.status === 401 || res.status === 404) {
-                console.log(`Sorry, but there is ${res.status} error: ${res.statusText}`);
-            }
-
-            throw new Error(res.statusText);
+            throw new Error(`Request failed: ${res.status} ${res.statusText}`);
         }
 
         return res;
@@ -43,7 +35,9 @@ class Loader {
 
     private makeUrl(options: RequestOptions, endpoint: string): string {
         const urlOptions = { ...this.options, ...options };
-        const url = new URL(endpoint, this.baseLink);
+        const url = new URL(this.baseLink, window.location.origin);
+
+        url.searchParams.set('endpoint', endpoint);
 
         Object.entries(urlOptions).forEach(([key, value]) => {
             url.searchParams.set(key, String(value));
@@ -62,7 +56,7 @@ class Loader {
             .then((res: Response) => this.errorHandler(res))
             .then((res: Response) => res.json() as Promise<unknown>)
             .then((data: unknown) => callback(data))
-            .catch((err: unknown) => console.error(err));
+            .catch((err: unknown) => console.error('News request failed:', err));
     }
 }
 
