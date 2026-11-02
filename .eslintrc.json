@@ -15,7 +15,18 @@
     },
     "rules": {
         "no-debugger": "off",
-        "no-console": 0,
+        "no-console": "off",
         "class-methods-use-this": "off"
-    }
+    },
+    "overrides": [
+        {
+            "files": ["*.ts"],
+            "parser": "@typescript-eslint/parser",
+            "plugins": ["@typescript-eslint"],
+            "extends": ["plugin:@typescript-eslint/recommended"],
+            "rules": {
+                "@typescript-eslint/no-explicit-any": "error"
+            }
+        }
+    ]
 }
