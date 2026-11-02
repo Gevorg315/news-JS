@@ -10,10 +10,12 @@ type ResponseCallback<T = unknown> = (data: T) => void;
 class Loader {
     private baseLink: string;
     private options: RequestOptions;
+    private endpointAsPath: boolean;
 
-    constructor(baseLink: string, options: RequestOptions) {
+    constructor(baseLink: string, options: RequestOptions, endpointAsPath = false) {
         this.baseLink = baseLink;
         this.options = options;
+        this.endpointAsPath = endpointAsPath;
     }
 
     public getResp<T = unknown>(
@@ -35,9 +37,14 @@ class Loader {
 
     private makeUrl(options: RequestOptions, endpoint: string): string {
         const urlOptions = { ...this.options, ...options };
-        const url = new URL(this.baseLink, window.location.origin);
 
-        url.searchParams.set('endpoint', endpoint);
+        const baseUrl = this.endpointAsPath ? `${this.baseLink.replace(/\/$/, '')}/${endpoint}` : this.baseLink;
+
+        const url = new URL(baseUrl, window.location.origin);
+
+        if (!this.endpointAsPath) {
+            url.searchParams.set('endpoint', endpoint);
+        }
 
         Object.entries(urlOptions).forEach(([key, value]) => {
             url.searchParams.set(key, String(value));

@@ -1,119 +1,50 @@
-
-import { XMLParser } from 'fast-xml-parser';
-
-const parser = new XMLParser({
-    ignoreAttributes: true,
-    trimValues: true,
-});
-
-const SOURCES = [
-    {
-        id: 'bbc-world',
-        name: 'BBC World',
-        url: 'https://feeds.bbci.co.uk/news/world/rss.xml',
-    },
-    {
-        id: 'bbc-tech',
-        name: 'BBC Technology',
-        url: 'https://feeds.bbci.co.uk/news/technology/rss.xml',
-    },
-    {
-        id: 'guardian-world',
-        name: 'The Guardian - World',
-        url: 'https://www.theguardian.com/world/rss',
-    },
-];
-
-function getText(value) {
-    if (typeof value === 'string' || typeof value === 'number') {
-        return String(value);
-    }
-
-    if (value && typeof value === 'object' && '#text' in value) {
-        return String(value['#text']);
-    }
-
-    return '';
-}
-
-function cleanDescription(value) {
-    return getText(value).replace(/<[^>]*>/g, '').trim();
-}
-
-async function getArticles(sourceId) {
-    const source = SOURCES.find((item) => item.id === sourceId);
-
-    if (!source) {
-        throw new Error('Unknown news source');
-    }
-
-    const response = await fetch(source.url, {
-        headers: {
-            'User-Agent': 'NewsJS RSS Reader',
-        },
-    });
-
-    if (!response.ok) {
-        throw new Error(`RSS request failed: ${response.status}`);
-    }
-
-    const xml = await response.text();
-    const parsed = parser.parse(xml);
-    const items = parsed.rss?.channel?.item ?? [];
-    const articles = Array.isArray(items) ? items : [items];
-
-    return articles.slice(0, 20).map((item) => ({
-        source: {
-            id: source.id,
-            name: source.name,
-        },
-        author: getText(item['dc:creator']) || null,
-        title: cleanDescription(item.title) || 'Untitled article',
-        description: cleanDescription(item.description) || null,
-        url: getText(item.link),
-        urlToImage: null,
-        publishedAt: item.pubDate
-            ? new Date(item.pubDate).toISOString()
-            : new Date().toISOString(),
-    }));
-}
+const API_URL = process.env.API_URL || 'https://newsapi.org/v2';
 
 export default async (request) => {
     try {
-        const url = new URL(request.url);
-        const endpoint = url.searchParams.get('endpoint');
+        const requestUrl = new URL(request.url);
+        const endpoint = requestUrl.searchParams.get('endpoint');
 
-        if (endpoint === 'sources') {
-            return Response.json({
-                sources: SOURCES.map(({ id, name }) => ({ id, name })),
-            });
+        // Only allow the NewsAPI endpoints used by this application.
+        const allowedEndpoints = ['sources', 'everything'];
+
+        if (!allowedEndpoints.includes(endpoint)) {
+            return Response.json({ message: 'Unknown endpoint' }, { status: 404 });
         }
 
-        if (endpoint === 'everything') {
-            const sourceId = url.searchParams.get('sources');
+        const apiKey = process.env.API_KEY;
 
-            if (!sourceId) {
-                return Response.json(
-                    { message: 'A source ID is required' },
-                    { status: 400 }
-                );
+        if (!apiKey) {
+            console.error('NewsAPI key is missing from environment variables');
+
+            return Response.json({ message: 'News service is not configured' }, { status: 500 });
+        }
+
+        const apiUrl = new URL(`${API_URL}/${endpoint}`);
+
+        // Forward the original query parameters, except the internal endpoint.
+        requestUrl.searchParams.forEach((value, key) => {
+            if (key !== 'endpoint' && key !== 'apiKey') {
+                apiUrl.searchParams.set(key, value);
             }
+        });
 
-            const articles = await getArticles(sourceId);
+        // Add the API key on the server, never in the frontend.
+        apiUrl.searchParams.set('apiKey', apiKey);
 
-            return Response.json({ articles });
-        }
+        const apiResponse = await fetch(apiUrl);
 
-        return Response.json(
-            { message: 'Unknown endpoint' },
-            { status: 404 }
-        );
+        const responseBody = await apiResponse.text();
+
+        return new Response(responseBody, {
+            status: apiResponse.status,
+            headers: {
+                'Content-Type': apiResponse.headers.get('Content-Type') || 'application/json',
+            },
+        });
     } catch (error) {
-        console.error('News function error:', error);
+        console.error('NewsAPI proxy error:', error);
 
-        return Response.json(
-            { message: 'Unable to load news at this time' },
-            { status: 500 }
-        );
+        return Response.json({ message: 'Unable to load news at this time' }, { status: 500 });
     }
 };
