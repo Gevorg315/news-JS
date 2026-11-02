@@ -38,7 +38,9 @@ class Loader {
     private makeUrl(options: RequestOptions, endpoint: string): string {
         const urlOptions = { ...this.options, ...options };
 
-        const baseUrl = this.endpointAsPath ? `${this.baseLink.replace(/\/$/, '')}/${endpoint}` : this.baseLink;
+        const requestEndpoint = endpoint === 'sources' && this.endpointAsPath ? 'top-headlines/sources' : endpoint;
+
+        const baseUrl = this.endpointAsPath ? `${this.baseLink.replace(/\/$/, '')}/${requestEndpoint}` : this.baseLink;
 
         const url = new URL(baseUrl, window.location.origin);
 
