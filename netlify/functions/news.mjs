@@ -1,4 +1,7 @@
 import { XMLParser } from 'fast-xml-parser';
+import sourcesData from '../data/sources.json';
+
+const ALL_SOURCES = Array.isArray(sourcesData) ? sourcesData : sourcesData.sources || [];
 
 const FEEDS = [
     {
@@ -24,10 +27,14 @@ const parser = new XMLParser({
 });
 
 function getText(value) {
-    if (typeof value === 'string') return value;
+    if (typeof value === 'string') {
+        return value;
+    }
+
     if (value && typeof value === 'object') {
         return value['#text'] ?? '';
     }
+
     return '';
 }
 
@@ -72,13 +79,15 @@ export default async (request) => {
         const url = new URL(request.url);
         const endpoint = url.searchParams.get('endpoint');
 
+        // Return all 125 sources from sources.json.
         if (endpoint === 'sources') {
             return Response.json({
                 status: 'ok',
-                sources: FEEDS,
+                sources: ALL_SOURCES,
             });
         }
 
+        // Retrieve articles separately from the RSS feeds.
         if (endpoint === 'everything') {
             const requestedSources = url.searchParams.get('sources');
 
@@ -97,10 +106,22 @@ export default async (request) => {
             });
         }
 
-        return Response.json({ status: 'error', message: 'Unknown endpoint' }, { status: 404 });
+        return Response.json(
+            {
+                status: 'error',
+                message: 'Unknown endpoint',
+            },
+            { status: 404 }
+        );
     } catch (error) {
         console.error('RSS function error:', error);
 
-        return Response.json({ status: 'error', message: 'Unable to load RSS news' }, { status: 500 });
+        return Response.json(
+            {
+                status: 'error',
+                message: 'Unable to load news',
+            },
+            { status: 500 }
+        );
     }
 };
